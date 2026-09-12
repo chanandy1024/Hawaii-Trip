@@ -24,7 +24,8 @@ const VERBS = {
   ref: 'added a reference for',
   reset: 'reset the whole plan',
   import: 'merged in changes',
-  clear: 'cleared the change feed'
+  clear: 'cleared the change feed',
+  vehicle: 'updated'
 };
 
 export function verbFor(kind) {

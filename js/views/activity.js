@@ -21,7 +21,8 @@ const ICONS = {
   ref: '#',
   reset: '⚠',
   import: '⇄',
-  clear: '🧹'
+  clear: '🧹',
+  vehicle: '🚗'
 };
 
 /** Group events under "Today", "Yesterday", or a date. */

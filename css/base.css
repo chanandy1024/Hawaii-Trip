@@ -1,0 +1,130 @@
+/* Design tokens, reset and typography. */
+
+:root {
+  --bg: #F7F8FA;
+  --card: #FFFFFF;
+  --edge: #E9EBEF;
+  --edge-soft: #EFF1F4;
+  --ink: #0B0B0D;
+  --grey: #6C7278;
+  --grey-2: #8D929A;
+  --caps: #8A8F98;
+  --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 1px 3px rgba(16, 24, 40, .04);
+  --blue-1: #EAF6FB;
+  --blue-2: #D9EDF5;
+  --cream: #FDF5E6;
+  --booking: #0B3B6F;
+  --good: #166534;
+  --good-bg: #E7F3EA;
+  --warn: #C2410C;
+  --warn-bg: #FDEBE6;
+  --cool: #0E7490;
+  --danger: #B42318;
+  --r: 16px;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1 {
+  font-size: clamp(40px, 7.5vw, 58px);
+  font-weight: 800;
+  letter-spacing: -.035em;
+  line-height: 1;
+  margin: 0 0 22px;
+}
+
+h2 {
+  font-size: clamp(22px, 3.4vw, 27px);
+  font-weight: 700;
+  letter-spacing: -.02em;
+  margin: 0 0 18px;
+}
+
+h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  margin: 40px 0 15px;
+}
+h3.first { margin-top: 0; }
+
+h4 {
+  font-size: 17.5px;
+  font-weight: 700;
+  letter-spacing: -.015em;
+  margin: 0 0 4px;
+}
+
+a { color: var(--cool); }
+
+.eyebrow {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .15em;
+  color: var(--caps);
+  text-transform: uppercase;
+  margin: 0 0 14px;
+}
+
+.lede {
+  color: var(--grey);
+  margin: 0 0 22px;
+  font-size: 15.5px;
+  max-width: 68ch;
+}
+
+.caps {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--caps);
+  margin: 0;
+}
+
+.credits {
+  font-size: 12.5px;
+  color: var(--grey-2);
+  margin: 14px 0 0;
+  line-height: 1.55;
+}
+
+.foot {
+  margin-top: 32px;
+  padding-top: 20px;
+  border-top: 1px solid var(--edge);
+  font-size: 13.5px;
+  color: var(--grey-2);
+  line-height: 1.55;
+  max-width: 76ch;
+}
+
+.empty {
+  background: var(--card);
+  border: 1px dashed #CFD4DB;
+  border-radius: var(--r);
+  padding: 34px 24px;
+  text-align: center;
+  color: var(--grey);
+  font-size: 15.5px;
+}
+
+:focus-visible {
+  outline: 2.5px solid var(--cool);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hawai‘i '26</title>
+<meta name="description" content="Trip plan: Maui and Honolulu, 20–27 September 2026.">
+<meta name="color-scheme" content="light">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="./css/base.css">
+<link rel="stylesheet" href="./css/layout.css">
+<link rel="stylesheet" href="./css/components.css">
+</head>
+<body>
+
+<!-- ── sign-in gate ───────────────────────────────────────────────────────── -->
+<!-- This is a client-side check. It keeps a shared link from being idly poked
+     at; it is not security. See js/auth.js for the full explanation. -->
+<div id="gate" hidden>
+  <div class="gate-card">
+    <h1>Hawai‘i '26</h1>
+    <p class="sub">20–27 September · Maui and Honolulu</p>
+    <form id="gateForm" autocomplete="off">
+      <label for="gateUser">Name</label>
+      <input id="gateUser" name="trip-user" type="text" autocomplete="off" spellcheck="false" required>
+      <label for="gatePass">Passphrase</label>
+      <input id="gatePass" name="trip-pass" type="password" autocomplete="off" required>
+      <p class="gate-err" id="gateErr" hidden></p>
+      <button class="go" type="submit">Open the plan</button>
+    </form>
+    <p class="gate-note">
+      This gate runs in your browser, so treat it as a doormat rather than a lock — anyone
+      determined can step around it, and the trip data is readable either way. Don't put
+      anything private in here.
+    </p>
+  </div>
+</div>
+
+<!-- ── app ────────────────────────────────────────────────────────────────── -->
+<div class="wrap">
+
+  <div class="head-row">
+    <div>
+      <p class="eyebrow">20–27 Sep 2026 · SFO → Maui → Honolulu → JFK · Car both islands</p>
+      <h1>Hawai‘i '26</h1>
+    </div>
+    <div class="toolbar">
+      <button class="btn ghost sm" id="btnExport">Export</button>
+      <button class="btn ghost sm" id="btnImport">Import</button>
+      <button class="btn ghost sm" id="btnReset">Reset</button>
+      <button class="btn ghost sm" id="btnOut">Sign out</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+  </div>
+
+  <div class="statusline">
+    <span>Editing as <b id="who">—</b></span>
+    <span id="syncPill" class="pill">…</span>
+    <button id="newAlert" class="alertbtn" hidden></button>
+  </div>
+
+  <nav role="tablist" id="tabs"></nav>
+
+  <div role="tabpanel" id="overview"></div>
+  <div role="tabpanel" id="activities" hidden></div>
+  <div role="tabpanel" id="stay" hidden></div>
+  <div role="tabpanel" id="food" hidden></div>
+  <div role="tabpanel" id="confirmed" hidden></div>
+  <div role="tabpanel" id="days" hidden></div>
+  <div role="tabpanel" id="changes" hidden></div>
+  <div role="tabpanel" id="book" hidden></div>
+
+  <p class="foot">
+    Prices marked <b>live rate</b> are Booking.com totals pulled for these exact dates and a party
+    of two, with their review scores alongside. Prices marked <b>estimate</b> are not quotes — the
+    Four Seasons, Andaz and Ka La‘i are not in Booking's inventory, so price those direct. Parking
+    is billed on top everywhere and is not included; O‘ahu adds roughly 18.7% tax to the room and
+    resort fee both, and Hawai‘i's accommodations tax rose to 11% in January 2026. Activity prices
+    are per person unless marked otherwise. Photo slots take any image URL you paste. Verify every
+    reservation window directly — they change.
+  </p>
+
+</div>
+
+<!-- ── photo url bar ──────────────────────────────────────────────────────── -->
+<div id="imgbar" hidden>
+  <div class="ibin">
+    <span class="who">Photo</span>
+    <input id="imgbarUrl" type="url" placeholder="Paste an image URL ending in .jpg / .png">
+    <button class="pri" id="imgbarSave">Save</button>
+    <button id="imgbarFind">Find photos ↗</button>
+    <button id="imgbarClear">Remove</button>
+    <button id="imgbarCancel">Cancel</button>
+    <p class="hint">
+      Right-click a photo on the hotel or restaurant's own site → “Copy image address”, then paste
+      it here.
+    </p>
+  </div>
+</div>
+
+<div id="toast" hidden></div>
+
+<script type="module" src="./js/app.js"></script>
+</body>
+</html>

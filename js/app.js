@@ -13,6 +13,7 @@ import { initPhotoBar } from './views/shared.js';
 import * as overview from './views/overview.js';
 import * as activities from './views/activities.js';
 import * as stay from './views/stay.js';
+import * as vehicles from './views/vehicles.js';
 import * as food from './views/food.js';
 import * as days from './views/days.js';
 import * as confirmed from './views/confirmed.js';
@@ -23,6 +24,7 @@ const TABS = [
   { id: 'overview', label: 'Overview', view: overview },
   { id: 'activities', label: 'Activities', view: activities },
   { id: 'stay', label: 'Stay', view: stay },
+  { id: 'vehicles', label: 'Vehicles', view: vehicles },
   { id: 'food', label: 'Food', view: food },
   { id: 'confirmed', label: 'Confirmed', view: confirmed, badge: 'confirmed' },
   { id: 'days', label: 'Days', view: days },

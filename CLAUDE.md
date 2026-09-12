@@ -8,6 +8,12 @@ credentials or digests here, in the README, or in code comments. Those live in
 `OPERATIONS.local.md`, which `.gitignore` excludes. If you find yourself documenting how
 the app is configured, put it there instead.
 
+## Never push to main
+
+`main` is protected and every change needs the owner's review. Work on a branch and push
+that; let them open and merge the pull request. Do not push to `main`, and do not merge a
+pull request yourself, even if the command would succeed.
+
 ## Running it
 
 ```bash

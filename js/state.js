@@ -3,6 +3,7 @@
 // the change log so other people can see it happened.
 
 import { DEFAULT_DAYS } from '../data/days.js';
+import { DEFAULT_VEHICLES } from '../data/vehicles.js';
 import { uid, isImageUrl } from './util.js';
 import { makeEvent, append, mergeLogs, unseen } from './changelog.js';
 
@@ -19,6 +20,7 @@ function blank() {
     hidden: {},         // id -> 1 for removed built-ins
     imgs: {},           // thumbnail key -> image URL
     days: null,         // itinerary, seeded from DEFAULT_DAYS
+    vehicles: null,     // rental cars, seeded from DEFAULT_VEHICLES
     log: [],            // change feed, see changelog.js
     logClearedAt: '',   // watermark: events at or before this are gone for good
     seenBy: {},         // user -> ISO of the last time they read the feed
@@ -170,6 +172,9 @@ export function hydrate(obj) {
   if (!Array.isArray(state.days) || !state.days.length) {
     state.days = JSON.parse(JSON.stringify(DEFAULT_DAYS));
   }
+  if (!Array.isArray(state.vehicles) || !state.vehicles.length) {
+    state.vehicles = JSON.parse(JSON.stringify(DEFAULT_VEHICLES));
+  }
   if (!Array.isArray(state.log)) state.log = [];
   if (!Array.isArray(state.addActs)) state.addActs = [];
   if (!Array.isArray(state.addFood)) state.addFood = [];
@@ -236,6 +241,21 @@ export function mergeIn(incoming) {
 
   const haveF = new Set(state.addFood.map((f) => f.id));
   (incoming.addFood || []).forEach((f) => { if (f && !haveF.has(f.id)) state.addFood.push(f); });
+
+  // Vehicles are small records rather than one document, so they merge per car:
+  // union by id, and whoever edited a given car last wins it.
+  const mineV = new Map((state.vehicles || []).map((v) => [v.id, v]));
+  (incoming.vehicles || []).forEach((v) => {
+    if (!v || !v.id) return;
+    const mine = mineV.get(v.id);
+    if (!mine) { mineV.set(v.id, v); return; }
+    const theirs = v.updatedAt || '';
+    const ours = mine.updatedAt || '';
+    // On an exact tie — two devices editing within the same millisecond — let a
+    // removal win. Coming back from the dead is the worse surprise.
+    if (theirs > ours || (theirs === ours && v.removed && !mine.removed)) mineV.set(v.id, v);
+  });
+  if (mineV.size) state.vehicles = [...mineV.values()];
 
   // Strictly greater: on a tie keep the itinerary in front of whoever is typing.
   if (incoming.days && (incoming.rev || 0) > (state.rev || 0)) state.days = incoming.days;
@@ -405,6 +425,67 @@ export function removeRecord(id, label) {
 /** Days are edited in place by the view; this records and persists the result. */
 export function touchDays(what) {
   note('day', what || '');
+  save();
+}
+
+/* ---------------- vehicles ---------------- */
+
+/** The cars anyone still cares about — removed ones stay as tombstones. */
+export function liveVehicles() {
+  return (state.vehicles || []).filter((v) => v && !v.removed);
+}
+
+export function findVehicle(id) {
+  return (state.vehicles || []).find((v) => v && v.id === id);
+}
+
+/**
+ * Mark a car as edited now — but never with a stamp the record already has.
+ * Two edits inside the same millisecond would otherwise tie, and a tie means
+ * the merge cannot tell which one came second.
+ */
+function stamp(v) {
+  const now = new Date().toISOString();
+  v.updatedAt = (v.updatedAt && now <= v.updatedAt)
+    ? new Date(new Date(v.updatedAt).getTime() + 1).toISOString()
+    : now;
+  return v;
+}
+
+export function addVehicle(fields) {
+  const v = stamp(Object.assign({
+    id: uid('v'),
+    label: 'Another car',
+    isle: 'maui',
+    company: '', kind: '', pickup: '', pickupAt: '',
+    dropoff: '', dropoffAt: '', ref: '', cost: '', driver: '', note: ''
+  }, fields));
+  state.vehicles.push(v);
+  note('add', v.label, 'vehicle');
+  save();
+  return v;
+}
+
+export function patchVehicle(id, field, value) {
+  const v = findVehicle(id);
+  if (!v) return;
+  if (v[field] === value) return;   // a blur that changed nothing is not an edit
+  v[field] = value;
+  stamp(v);
+  note('vehicle', v.label || id, field === 'note' ? '' : field + ': ' + value);
+  save();
+}
+
+/**
+ * Removing is a tombstone, not a splice. Merging is a union, so a car dropped
+ * from this copy would come straight back from the other person's.
+ */
+export function removeVehicle(id) {
+  const v = findVehicle(id);
+  if (!v) return;
+  v.removed = 1;
+  stamp(v);
+  note('remove', v.label || id, 'vehicle');
   save();
 }
 

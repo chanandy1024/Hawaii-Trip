@@ -7,13 +7,24 @@ Static site — vanilla ES modules, no build step, no dependencies.
 
 ---
 
-## Updating it
+## Making a change
+
+`main` is protected: **nothing lands without a review from the repository owner.** So the
+loop is a branch and a pull request, not a push to main.
 
 ```bash
-./deploy.sh "what changed"
+git switch -c what-im-changing
+# ...edit...
+git add -A && git commit -m "what changed"
+git push -u origin what-im-changing
 ```
 
-That commits everything and pushes. GitHub Pages redeploys in about a minute. The files
+GitHub then offers to open the pull request. Once it is approved and merged, Pages
+redeploys from `main` in about a minute. `.github/CODEOWNERS` makes the owner a required
+reviewer on every file.
+
+`./deploy.sh "what changed"` still exists for the owner's own direct pushes, which the
+protection lets through by bypass. Everyone else goes through a pull request. The files
 must stay at the repo root — `index.html` at the top level — and `.nojekyll` must stay
 put so the folders are served as-is. All paths are relative, so the project subpath works
 unchanged.

@@ -1,0 +1,8 @@
+# Every file in this repository is owned by the trip's owner, so every pull
+# request needs their review before it can be merged.
+#
+# This file on its own is advisory. It only becomes a rule once main is
+# protected with "require a pull request before merging" and "require review
+# from Code Owners" — see the branch ruleset in the repository settings.
+
+*       @chanandy1024

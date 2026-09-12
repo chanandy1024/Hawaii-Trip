@@ -9,13 +9,13 @@ export const HOTELS = [
     "id": "airbnb",
     "e": "🔑",
     "t": "p",
-    "name": "The Airbnb you sent",
+    "name": "Maui Oasis Retreat At The Grand Champions",
     "tag": [
       "val",
       "your link"
     ],
     "specs": "Whole place · 4 nights · Your own figure",
-    "hood": "Confirm the neighbourhood",
+    "hood": "Wailea, Hawaii",
     "total": "$1,079",
     "night": "$270",
     "pp": "$540",

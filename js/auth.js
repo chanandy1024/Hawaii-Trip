@@ -1,31 +1,41 @@
-// A front-door gate for the trip page.
+// Front-door gate for the trip page.
 //
-// ── READ THIS BEFORE YOU TRUST IT ────────────────────────────────────────────
-// GitHub Pages serves static files. There is no server, so this check runs
-// entirely in the visitor's browser. That means it is a DOORMAT, NOT A LOCK:
+// This runs in the visitor's browser, so it is a courtesy check rather than an
+// access control boundary: it keeps a shared link from being opened by whoever
+// happens across it. Treat everything this page can reach as readable, and keep
+// anything actually private out of the trip.
 //
-//   * Anyone can open DevTools and skip the gate in about ten seconds.
-//   * Anyone can read this file at
-//     https://<you>.github.io/hawaii-26/js/auth.js
-//   * The trip data itself is in data/*.js and is readable without logging in.
-//
-// It is stored as a salted SHA-256 digest rather than plaintext, so the
-// passphrase is not sitting in the repo in readable form. That stops casual
-// shoulder-surfing. It does NOT stop anyone who actually wants in: a short
-// dictionary word falls to a wordlist in seconds, and in any case the check
-// itself can simply be bypassed in the console.
-//
-// So: fine for keeping a link from being idly poked at. Do not put anything
-// private behind it, and do not reuse this passphrase anywhere that matters.
-// If you need real access control, see the "Real logins" section of README.md.
-// ─────────────────────────────────────────────────────────────────────────────
+// The credential is kept as a salted SHA-256 digest, never as plaintext.
+// Operational notes — rotating it, adding a person — are kept out of the repo.
 
 const SALT = 'hawaii26:8f3a91';
 
-// sha256(SALT + ":" + username.toLowerCase().trim() + ":" + passphrase)
-const DIGEST = '885b755c1e2f55372c4ddb29aebe5f6f8563e3b5a53d751cb1f5ce015d82324d';
+/**
+ * One entry per person. `name` is the spelling that has to be typed — exactly,
+ * capital included — and is also the name their edits are signed with, so the
+ * change feed and the vote tallies never split across "Andy" and "andy".
+ *
+ * The digest itself is still taken over the lower-cased name, so an existing
+ * credential keeps working; the spelling is checked separately.
+ */
+const ACCOUNTS = [
+  { name: 'Xinyu', digest: '885b755c1e2f55372c4ddb29aebe5f6f8563e3b5a53d751cb1f5ce015d82324d' },
+  { name: 'Andy', digest: '3d28d67e6bf9db20edfc12625dff5330cd69d23159a7bc15598ca8e0892b2106' }
+];
 
 const SESSION_KEY = 'hawaii26:session';
+
+const INSECURE = 'This page can only check a passphrase over https, or on localhost. ' +
+  'Open the published site rather than a file or a local IP address.';
+
+/**
+ * WebCrypto only exists in a secure context. Served over https or from
+ * localhost it is there; over http://192.168.x.x, or from a file:// path, it
+ * is not — and every sign-in attempt would throw with nothing on screen.
+ */
+function canHash() {
+  return !!(globalThis.crypto && globalThis.crypto.subtle);
+}
 
 async function sha256(text) {
   const bytes = new TextEncoder().encode(text);
@@ -35,23 +45,28 @@ async function sha256(text) {
     .join('');
 }
 
-/**
- * Recompute the digest for a new credential pair.
- * Run this in the browser console, then paste the result over DIGEST above:
- *   await window.__hawaiiHash('someone', 'their-password')
- */
+/** Digest for a credential pair. See the operational notes for how it is used. */
 export async function hashFor(user, pass) {
   return sha256(SALT + ':' + String(user).toLowerCase().trim() + ':' + pass);
 }
 
+/**
+ * Returns the account's canonical name on success, or '' on failure.
+ * The name must be typed as it is spelled in ACCOUNTS — "Xinyu", not "xinyu".
+ */
 export async function check(user, pass) {
-  if (!user || !pass) return false;
-  const got = await hashFor(user, pass);
+  if (!user || !pass) return '';
+
+  const typed = String(user).trim();
+  const account = ACCOUNTS.find((a) => a.name === typed);
+  if (!account) return '';
+
+  const got = await hashFor(typed, pass);
   // Constant-time-ish compare. Cosmetic here, but costs nothing.
-  if (got.length !== DIGEST.length) return false;
+  if (got.length !== account.digest.length) return '';
   let diff = 0;
-  for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ DIGEST.charCodeAt(i);
-  return diff === 0;
+  for (let i = 0; i < got.length; i++) diff |= got.charCodeAt(i) ^ account.digest.charCodeAt(i);
+  return diff === 0 ? account.name : '';
 }
 
 export function remember(user) {
@@ -90,23 +105,39 @@ export function requireSignIn() {
     gate.hidden = false;
     userEl.focus();
 
+    function fail(msg, keepPass) {
+      errEl.textContent = msg;
+      errEl.hidden = false;
+      if (!keepPass) passEl.value = '';
+      passEl.focus();
+    }
+
+    // Say so up front rather than letting the button appear dead.
+    if (!canHash()) fail(INSECURE, true);
+
     form.addEventListener('submit', async (ev) => {
       ev.preventDefault();
       const user = userEl.value.trim();
-      const ok = await check(user, passEl.value);
-      if (!ok) {
-        errEl.textContent = 'That pair does not match. Check the capital letters.';
-        errEl.hidden = false;
-        passEl.value = '';
-        passEl.focus();
+
+      let name = '';
+      try {
+        name = await check(user, passEl.value);
+      } catch (e) {
+        // Without this the rejection is swallowed and the form just sits there.
+        console.error('sign-in check failed', e);
+        fail(canHash() ? 'Something went wrong checking that — see the browser console.' : INSECURE,
+          true);
         return;
       }
-      remember(user);
-      gate.hidden = true;
-      resolve(user);
-    });
 
-    // Exposed so you can generate a digest for a new person without tooling.
-    window.__hawaiiHash = hashFor;
+      if (!name) {
+        fail('That pair does not match. The name is case-sensitive too.');
+        return;
+      }
+      // Sign in under the canonical spelling, whatever case was typed around it.
+      remember(name);
+      gate.hidden = true;
+      resolve(name);
+    });
   });
 }

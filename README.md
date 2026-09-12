@@ -7,36 +7,20 @@ Static site — vanilla ES modules, no build step, no dependencies.
 
 ---
 
-## 1. Put it on GitHub Pages
-
-From inside this folder:
+## Updating it
 
 ```bash
-git init
-git add .
-git commit -m "Hawai'i '26 trip plan"
-git branch -M main
-git remote add origin https://github.com/chanandy1024/Hawaii-Trip.git
-git push -u origin main
+./deploy.sh "what changed"
 ```
 
-Then in the repo on github.com:
-
-**Settings → Pages → Source: “Deploy from a branch” → Branch `main`, folder `/ (root)` → Save**
-
-Give it a minute, then open <https://chanandy1024.github.io/Hawaii-Trip/>.
-
-Notes:
-- The files must sit at the **repo root** — `index.html` at the top level, not inside a subfolder.
-- `.nojekyll` is included so GitHub doesn't run Jekyll over the folders.
-- All paths are relative, so serving from the `/Hawaii-Trip/` subpath works with no changes.
-- The URL is case-sensitive: `Hawaii-Trip`, not `hawaii-trip`.
-
-To update later: `git add -A && git commit -m "..." && git push`. Pages redeploys in about a minute.
+That commits everything and pushes. GitHub Pages redeploys in about a minute. The files
+must stay at the repo root — `index.html` at the top level — and `.nojekyll` must stay
+put so the folders are served as-is. All paths are relative, so the project subpath works
+unchanged.
 
 ---
 
-## 2. Seeing when someone changes something
+## Seeing when someone changes something
 
 There is a **Changes** tab. Every edit anyone makes is recorded there — confirmations,
 votes, added places, itinerary rewrites, photos, cost entries — with who did it and
@@ -52,121 +36,54 @@ On top of that:
 - Entries you haven't seen are highlighted and tagged **new** until you open the tab.
 
 The feed keeps the most recent 120 changes and travels with the trip data, so it
-survives an Export/Import and is visible to everyone once sharing is on.
+survives an Export/Import and is visible to everyone.
 
-**The feed works immediately. Actually receiving other people's changes needs step 3.**
-
----
-
-## 3. Turning on sharing
-
-GitHub Pages only serves files — there is no server, so there is nowhere for a shared
-copy of the trip to live. Until you do this, each browser keeps its own plan and the
-status pill reads *“Not shared”*.
-
-### Option A — Firebase Realtime Database (recommended, ~10 minutes, free)
-
-1. Go to <https://console.firebase.google.com> and create a project.
-2. **Build → Realtime Database → Create Database.** Pick any region.
-   Choose **“Start in test mode”**.
-3. Copy the database URL it shows — it looks like
-   `https://hawaii-trip-default-rtdb.firebaseio.com`
-4. Open `js/sync.js` and set the two values at the top:
-
-   ```js
-   const MODE = 'firebase';
-   const DATABASE_URL = 'https://hawaii-trip-default-rtdb.firebaseio.com';
-   ```
-
-5. Back in Firebase: **Realtime Database → Rules**, paste this, press **Publish**:
-
-   ```json
-   {
-     "rules": {
-       "trips": {
-         "hawaii-2026": {
-           ".read": true,
-           ".write": true
-         }
-       }
-     }
-   }
-   ```
-
-6. `git add -A && git commit -m "Turn on sharing" && git push`
-
-Everyone on the site now shares one plan. The page checks for changes every 12 seconds.
-
-**Be clear-eyed about those rules.** They let anyone who knows the database URL read
-and overwrite the trip, and that URL ships in `js/sync.js` on a public site. For a trip
-plan that is usually an acceptable trade; it is not private. To do better, enable
-Firebase **Anonymous Authentication** and use `".write": "auth != null"`, which is real
-authentication — unlike the sign-in gate described below.
-
-The `DATABASE_URL` itself is not a secret. It identifies the project; Firebase expects
-it to be public. All access control lives in those rules, which is why step 5 matters.
-
-#### How the syncing works
-
-- Saving does a `PUT` of the whole trip to `/trips/hawaii-2026.json`.
-- Polling does a `GET` of just `/rev.json` — a single number, a few bytes — and only
-  pulls the full document when that number has moved. A quiet trip costs almost nothing,
-  so the free tier is fine.
-- Background tabs don't poll; a tab catches up the moment you switch back to it.
-- Merging is additive for confirmations, votes, photos and added items. The itinerary is
-  one document, so the higher revision wins. The change feed is a union by event id, so
-  nothing is ever lost to a merge.
-
-### Option B — pass a file around (zero setup)
-
-**Export** downloads `hawaii-2026-trip.json` with everything including the change feed.
-The other person hits **Import** and it merges, reporting how many changes came in.
-Fine for two people who talk to each other.
-
-### Option C — everyone commits
-
-Add collaborators under **Settings → Collaborators**. They edit `data/*.js` and push.
-Version-controlled, no runtime service, but not live and everyone needs Git.
+**Clear the feed** at the top of the tab empties it for everyone, not just on your device
+— it takes two clicks, because it reaches the other person's copy too. Nothing that was
+confirmed, voted on or written down is touched; only the record of who did it. New
+activity after a clear records normally.
 
 ---
 
-## 4. The sign-in gate
+## Sharing
 
-`js/auth.js` checks a name and passphrase against a salted SHA-256 digest.
-The credentials are **Xinyu** / the passphrase you chose.
+Everyone on the site edits one trip. Your edits push as you make them; other people's
+arrive within about twelve seconds, or the moment you switch back to the tab.
 
-**This is a doormat, not a lock.** The check runs in the visitor's browser because
-there is no server. Anyone can open DevTools and step around it in seconds, `auth.js`
-is readable at `/js/auth.js`, and everything in `data/` is served whether or not you
-sign in. Storing a digest rather than plaintext means the passphrase isn't sitting in
-the repo in readable form — that stops idle curiosity and nothing more.
+- Saving sends the whole trip, one request at a time. Saves made while one is in flight
+  collapse into a single follow-up carrying the latest state — two overlapping writes can
+  land in either order, and the older one winning is how an edit quietly disappears.
+- Polling reads only the revision number — a few bytes — and pulls the whole document
+  only when that number *differs* from ours. Not "is higher": the revision is a per-device
+  counter, so whoever has made the most edits would otherwise never pull anyone else's.
+  After a pull that leaves the two sides out of step, the merged result is pushed back so
+  both land on the same number.
+- Background tabs don't poll; a tab catches up when you switch back to it.
+- Merging is additive for confirmations, photos and added items. Votes merge per person,
+  keeping whichever vote each individual cast most recently. The itinerary is one document
+  so the higher revision wins, and on a tie the copy in front of whoever is typing stays.
+  The change feed is a union by event id, so nothing is lost to a merge.
 
-Fine for keeping a shared link from being poked at. Don't put anything private behind
-it, and don't reuse that passphrase anywhere that matters.
-
-### Adding another person
-
-In the browser console on the live site:
-
-```js
-await window.__hawaiiHash('andy', 'some-passphrase')
-```
-
-Paste the result over `DIGEST` in `js/auth.js`. For several people, make `DIGEST` an
-array and check for membership.
-
-### If you want a real login
-
-- **Netlify** or **Cloudflare Pages** — password protection at the edge, free tier.
-- **Cloudflare Access** — email-link sign-in in front of the whole site.
-- **Firebase Auth** — real accounts, pairs with Option A above.
-
-GitHub Pages has no access control for public repos. Private repos can serve Pages on
-paid plans, but the published site is still public.
+**Export / Import** is the offline path: Export downloads the whole trip including the
+change feed, Import merges one back in and reports how many changes arrived.
 
 ---
 
-## 5. Running it locally
+## The sign-in gate
+
+The page asks for a name and passphrase; there are two people on it. **The name is
+case-sensitive** — it has to be typed the way it is spelled — and whatever spelling is
+registered is the name your edits are signed with, so the change feed and the vote counts
+never split one person in two.
+
+That check runs in the visitor's browser, which makes it a courtesy rather than a lock — it keeps the link from being opened by whoever
+happens across it, and nothing more. **Anything on this page should be treated as
+readable.** Don't put anything private in the trip, and don't reuse the passphrase
+anywhere that matters.
+
+---
+
+## Running it locally
 
 ES modules are blocked over `file://`, so **double-clicking `index.html` won't work.**
 
@@ -191,9 +108,9 @@ Hawaii-Trip/
 │   ├── app.js              # entry point, tab registry, sync wiring
 │   ├── state.js            # the only mutable store; persistence and merge
 │   ├── changelog.js        # change events, merge, relative time
-│   ├── sync.js             # Firebase REST adapter + revision polling
-│   ├── auth.js             # sign-in gate (read the comment at the top)
-│   ├── util.js             # esc, money parsing, links, toast
+│   ├── sync.js             # remote adapter + revision polling
+│   ├── auth.js             # sign-in gate
+│   ├── util.js             # escaping, sanitising, money parsing, links, toast
 │   └── views/
 │       ├── shared.js       # thumbnails, confirm button, photo bar
 │       ├── overview.js     # highlights, conditions, driving
@@ -209,8 +126,10 @@ Hawaii-Trip/
 │   ├── activities.js
 │   ├── hotels.js
 │   ├── food.js
-│   └── days.js
-└── assets/                 # local photos, if you stop using URLs
+│   ├── days.js
+│   └── photos.js           # photo files + their credits, keyed by card
+└── assets/
+    └── photos/             # the photos themselves, and CREDITS.md
 ```
 
 ### How a view works
@@ -227,6 +146,11 @@ To add a tab: write the module, add one line to `TABS` in `app.js`, add one empt
 and push it to the remote. Writing `state.x = y` directly skips the feed, so nobody
 else will see it.
 
+**Anything that arrives from the shared copy is untrusted.** Escape it with `esc()`, or
+if it genuinely needs to keep its bold, run it through `sanitizeInline()`. The two places
+that render stored markup rather than text are itinerary lines and activity notes, and
+both are sanitised on the way in and on the way out.
+
 ---
 
 ## Data notes
@@ -237,7 +161,21 @@ else will see it.
   in Booking's inventory — price those direct.
 - Totals exclude tax and parking. O‘ahu adds roughly 18.7% to the room and resort fee;
   Hawai‘i's accommodations tax rose to 11% in January 2026.
-- Photo slots take any image URL. Nothing is bundled — no per-property images were
-  available under a licence that allowed redistribution.
+- Photos ship with the site, in `assets/photos`, listed in `data/photos.js` against the
+  card they belong to. They came from Wikimedia Commons under licences that allow reuse
+  **with credit**, which is what the credit line under each section is doing — it is
+  generated from the `by` and `lic` fields, so if you swap a photo, swap its credit too.
+  `assets/photos/CREDITS.md` is the long form. Files are resized to 1000px wide.
+- The three Wailea places you found yourself, and the Waikīkī hotels Commons had no
+  usable photo of, have empty photo strips. Paste image URLs into them — several at once,
+  separated by spaces, and the Stay card turns them into a gallery. Anything pasted is
+  stored per slot and syncs with everyone else.
+- Photos are only used where the file genuinely shows the subject. Where no photograph of
+  a property exists under a reusable licence — the two condos, the Airbnb, and a few of
+  the resorts — the card shows the setting instead and **says so on the picture**:
+  *“Wailea — the setting, not the property.”* A stock beach passed off as the room you are
+  booking would be worse than an empty frame. Same for the two cards captioned with what
+  they actually show: Spago inside the Four Seasons, and the Twin Fin under its former
+  name.
 - Reservation windows (Diamond Head 30 days, Hanauma Bay 48 hours, Haleakalā sunrise
   60 days) change. Verify directly.

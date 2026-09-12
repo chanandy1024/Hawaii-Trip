@@ -165,6 +165,82 @@
 }
 .setimg:hover { color: var(--ink); border-color: #C9CDD4; }
 
+/* ---------- photo strip ---------- */
+/* Leads the Stay cards. Scrolls sideways rather than wrapping, so a long
+   gallery never pushes the price and the bullets off the first screen. */
+.gal {
+  position: relative;
+  margin: -20px -20px 16px;
+  border-radius: var(--r) var(--r) 0 0;
+  overflow: hidden;
+  background: var(--edge-soft);
+}
+.gal-strip {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+  scrollbar-color: #C9CDD4 transparent;
+  padding-bottom: 6px;
+}
+.gal-strip img {
+  flex: 0 0 auto;
+  width: min(62%, 560px);
+  height: 300px;
+  object-fit: cover;
+  display: block;
+  scroll-snap-align: start;
+  background: var(--edge-soft);
+}
+.gal-strip img:only-child { width: 100%; }
+.gal-strip::-webkit-scrollbar { height: 8px; }
+.gal-strip::-webkit-scrollbar-track { background: transparent; }
+.gal-strip::-webkit-scrollbar-thumb { background: #C9CDD4; border-radius: 99px; }
+.gal-strip::-webkit-scrollbar-thumb:hover { background: var(--grey-2); }
+
+.gal-note {
+  position: absolute;
+  left: 10px;
+  bottom: 12px;
+  max-width: calc(100% - 120px);
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .92);
+  border: 1px solid var(--edge);
+  color: var(--grey);
+  font-size: 11.5px;
+  line-height: 1.5;
+  box-shadow: var(--shadow);
+}
+
+.gal .setimg {
+  width: auto;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 99px;
+  right: 10px;
+  bottom: 12px;
+  font-size: 12px;
+  box-shadow: var(--shadow);
+}
+
+.gal.empty {
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  height: 116px;
+  background: linear-gradient(150deg, var(--blue-1), var(--blue-2));
+}
+.gal.empty.g { background: linear-gradient(150deg, #EAF5EC, #D8EBDD); }
+.gal.empty.w { background: linear-gradient(150deg, #FDF3E3, #F7E6CB); }
+.gal.empty.p { background: linear-gradient(150deg, #F6EDF4, #EADCE8); }
+.gal.empty .ph { font-size: 30px; line-height: 1; }
+.gal.empty .setimg { position: static; }
+
+.photo-credits a { color: inherit; text-decoration: none; border-bottom: 1px solid var(--edge); }
+.photo-credits a:hover { color: var(--ink); border-bottom-color: var(--grey-2); }
+
 .t44 { width: 44px; height: 44px; border-radius: 10px; }
 .t62 { width: 62px; height: 62px; }
 .t84 { width: 84px; height: 84px; }
@@ -699,10 +775,27 @@
   .act-side::before, .act-side::after, .act::after { display: none; }
   .specs { text-align: left; max-width: none; }
   .stay-head { flex-direction: column; }
+  .gal-strip img { width: 88%; height: 210px; }
+  .gal.empty { height: 104px; }
   .day { grid-template-columns: 1fr; gap: 8px; }
   .t120 { width: 100%; height: 150px; }
   .x { opacity: 1; }
   .crow { flex-direction: column; }
+}
+
+/* ---------- change feed tools ---------- */
+.feed-tools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 18px 0 6px;
+}
+.feed-count { font-size: 13px; color: var(--grey-2); }
+.btn.arm, .btn.arm:hover {
+  border-color: var(--danger);
+  color: var(--danger);
+  background: var(--card);
 }
 
 /* ---------- sync status line ---------- */

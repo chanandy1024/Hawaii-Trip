@@ -1,6 +1,6 @@
 // Entry point. Gate → boot → paint, then poll for other people's changes.
 
-import { requireSignIn, currentUser, signOut } from './auth.js';
+import { requireSignIn, signOut } from './auth.js';
 import {
   state, save, boot, useRemote, exportJson, importJson, resetAll,
   confirmedCount, unseenEvents, mergeIn, status, onChange
@@ -195,6 +195,13 @@ async function start() {
     () => state.rev || 0,
     (snap) => {
       const fresh = mergeIn(snap);
+
+      // We just merged a copy that did not match ours. Push the union back so
+      // the shared document ends up holding both sides and everyone converges
+      // on one revision — otherwise whatever we hold that they lack stays
+      // stranded in this browser until the next edit.
+      if ((snap.rev || 0) !== state.rev) save();
+
       repaint();
       if (fresh.length) {
         const who = [...new Set(fresh.map((e) => e.who))].filter(Boolean);
@@ -216,10 +223,7 @@ async function start() {
   setInterval(paintStatus, 30000);
 
   if (syncMode === 'local') {
-    console.info(
-      'Sharing is off — each browser keeps its own copy. ' +
-      'See the instructions at the top of js/sync.js to turn it on.'
-    );
+    console.info('Sharing is off — this browser keeps its own copy.');
   }
 }
 
@@ -232,5 +236,3 @@ start().catch((e) => {
     'If you opened this file straight from disk, ES modules will not load: run a local server ' +
     'instead, with <code>./serve.sh</code> or <code>python3 -m http.server</code>.</div>');
 });
-
-window.__trip = { state, repaint, currentUser, status };

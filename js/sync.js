@@ -1,28 +1,17 @@
 // Shared storage, so several people edit one trip and each can see the others'
 // changes.
 //
-// ── HOW TO TURN IT ON ────────────────────────────────────────────────────────
-// 1. Go to https://console.firebase.google.com and create a project (free).
-// 2. Build → Realtime Database → Create Database. Pick any region.
-//    Choose "Start in test mode" for now; step 4 tightens it.
-// 3. Copy the database URL it shows you — it looks like
-//      https://your-project-default-rtdb.firebaseio.com
-//    Paste it into DATABASE_URL below and change MODE to 'firebase'.
-// 4. Rules tab → paste the ruleset from README.md → Publish.
-// 5. Commit and push. Everyone on the site now shares one plan.
+// The endpoint below is not a secret — a static site has to name it somewhere,
+// and the browser has to be able to reach it. That is exactly why access is
+// governed at the database, not here. Setup and rule notes are kept out of the
+// repo; see the operational notes.
 //
-// The database URL is not a secret — it identifies the project and is meant to
-// be public. All access control lives in the Firebase rules, so step 4 is the
-// one that actually matters. Skip it and anyone who finds the URL can rewrite
-// your trip.
-//
-// Until you do this, MODE stays 'local': the app works fine, but each browser
-// keeps its own copy and the only way to share is the Export / Import buttons.
-// ─────────────────────────────────────────────────────────────────────────────
+// With MODE 'local' the app still works, but each browser keeps its own copy and
+// the only way to share is Export / Import.
 
-const MODE = 'local'; // 'local' | 'firebase'
+const MODE = 'firebase'; // 'local' | 'firebase'
 
-const DATABASE_URL = ''; // e.g. 'https://hawaii-trip-default-rtdb.firebaseio.com'
+const DATABASE_URL = 'https://trips-3e742-default-rtdb.firebaseio.com/';
 
 const TRIP_ID = 'hawaii-2026';
 
@@ -41,12 +30,11 @@ function localAdapter() {
 }
 
 /**
- * Firebase Realtime Database over plain REST — append .json to any path.
- * No SDK, no bundler, nothing to install.
+ * Realtime Database over plain REST — append .json to any path. No SDK, no
+ * bundler, nothing to install.
  *
- * Polling reads only /rev.json (a single number, a few bytes) and pulls the
- * whole trip only when that number has moved. That keeps the free tier happy
- * even with a 12-second interval.
+ * Polling reads only the revision number — a few bytes — and pulls the whole
+ * trip only when that number differs from ours, so a quiet trip is nearly free.
  */
 function firebaseAdapter() {
   const base = DATABASE_URL.replace(/\/+$/, '') + '/trips/' + TRIP_ID;
@@ -59,7 +47,10 @@ function firebaseAdapter() {
       }
       throw new Error('Firebase ' + res.status);
     }
-    return res.json();
+    // A PUT with ?print=silent answers 204 with an empty body, and res.json()
+    // throws on that. Anything empty means "no content", not a failure.
+    const body = await res.text();
+    return body ? JSON.parse(body) : null;
   }
 
   return {
@@ -98,9 +89,9 @@ export function makeAdapter() {
 /**
  * Poll for other people's saves.
  *
- * Calls onRemote(snapshot) only when the remote revision is higher than the
- * local one, so a quiet trip costs one tiny request per interval and nothing
- * else. Returns a stop function.
+ * Calls onRemote(snapshot) only when the shared revision differs from ours, so a
+ * quiet trip costs one tiny request per interval and nothing else. Returns a
+ * stop function.
  */
 export function startPolling(adapter, getLocalRev, onRemote, onStatus) {
   if (!adapter || adapter.mode === 'local') return () => {};
@@ -111,7 +102,11 @@ export function startPolling(adapter, getLocalRev, onRemote, onStatus) {
     if (stopped || document.hidden) return; // don't poll a background tab
     try {
       const remoteRev = await adapter.revision();
-      if (remoteRev != null && remoteRev > getLocalRev()) {
+      // Not ">" — revisions are per-device counters, so a browser that has made
+      // more edits than everyone else would never pull. Any number other than
+      // our own means the shared copy came from somebody else; merging is
+      // additive, so pulling one we have already seen costs nothing.
+      if (remoteRev != null && remoteRev !== getLocalRev()) {
         const snap = await adapter.load();
         if (snap) onRemote(snap);
       }

@@ -2,9 +2,9 @@
 // edited the plan?" — everything anyone does shows up here, newest first,
 // with the entries you haven't read yet marked.
 
-import { state, markSeen, unseenEvents, status } from '../state.js';
+import { state, markSeen, unseenEvents, status, clearLog } from '../state.js';
 import { verbFor, ago } from '../changelog.js';
-import { esc } from '../util.js';
+import { esc, toast } from '../util.js';
 import { syncConfigured, POLL_MS } from '../sync.js';
 
 const ICONS = {
@@ -20,7 +20,8 @@ const ICONS = {
   cost: '$',
   ref: '#',
   reset: '⚠',
-  import: '⇄'
+  import: '⇄',
+  clear: '🧹'
 };
 
 /** Group events under "Today", "Yesterday", or a date. */
@@ -54,10 +55,9 @@ function statusBlock() {
       '<p>Right now this browser keeps its own copy, so nobody else\u2019s edits can reach ' +
       'you and yours can\u2019t reach them. The feed below still records everything <b>you</b> ' +
       'do, and <b>Export</b> will hand the whole thing to someone else.</p>' +
-      '<p>To make it live for everyone, follow the five steps at the top of ' +
-      '<code>js/sync.js</code> — a Firebase database URL and a rules paste, about ten minutes. ' +
-      'After that this box turns green and the page checks for other people\u2019s changes ' +
-      'every ' + Math.round(POLL_MS / 1000) + ' seconds.</p>' +
+      '<p>Sharing is configured in <code>js/sync.js</code>. With it on, this box turns green ' +
+      'and the page checks for other people\u2019s changes every ' +
+      Math.round(POLL_MS / 1000) + ' seconds.</p>' +
       '</div>';
   }
 
@@ -89,6 +89,12 @@ export function render() {
     return out;
   }
 
+  out += '<div class="feed-tools">' +
+    '<button class="btn ghost sm" id="clearFeed">Clear the feed</button>' +
+    '<span class="feed-count">' + log.length +
+      (log.length === 1 ? ' entry' : ' entries') + '</span>' +
+    '</div>';
+
   let bucket = null;
   out += '<ul class="feed">';
   log.forEach((e) => {
@@ -102,15 +108,40 @@ export function render() {
   out += '</ul>';
 
   out += '<p class="foot">The feed keeps the most recent 120 changes and travels with the trip, ' +
-    'so it survives an Export / Import and is visible to everyone when sharing is on.</p>';
+    'so it survives an Export / Import and is visible to everyone when sharing is on. ' +
+    'Clearing empties it for everyone, not just on this device, and nothing that has ' +
+    'already been confirmed, voted on or written down is affected — only the record of ' +
+    'who did it.</p>';
 
   return out;
 }
 
 /** Opening this tab counts as reading the feed. */
-export function bind() {
+export function bind(repaint) {
   if (unseenEvents().length) {
     // Let the paint finish first so the "new" markers are actually seen.
     setTimeout(markSeen, 1200);
   }
+
+  const btn = document.getElementById('clearFeed');
+  if (!btn) return;
+
+  // Two-step, like Reset: this one reaches everybody's copy.
+  btn.addEventListener('click', () => {
+    if (btn.dataset.armed !== '1') {
+      btn.dataset.armed = '1';
+      btn.textContent = 'Clear it for everyone?';
+      btn.classList.add('arm');
+      setTimeout(() => {
+        if (!document.body.contains(btn)) return;
+        btn.dataset.armed = '0';
+        btn.textContent = 'Clear the feed';
+        btn.classList.remove('arm');
+      }, 4000);
+      return;
+    }
+    clearLog();
+    repaint();
+    toast('Feed cleared for everyone');
+  });
 }

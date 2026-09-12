@@ -9,6 +9,42 @@ export function esc(s) {
     .replace(/"/g, '&quot;');
 }
 
+/**
+ * Keep the handful of tags the itinerary actually uses and turn everything else
+ * into plain text.
+ *
+ * Day lines are stored and re-rendered as HTML so that <b> works, and they
+ * travel to everyone else on the trip — which means an itinerary line is the
+ * one place where what somebody types is fed back into the page as markup.
+ * Bold and italics survive; tags, attributes and event handlers do not.
+ */
+const INLINE_OK = /^(B|I|EM|STRONG|BR)$/;
+
+export function sanitizeInline(html) {
+  const box = document.createElement('div');
+  box.innerHTML = String(html == null ? '' : html);
+
+  (function walk(node) {
+    Array.from(node.childNodes).forEach((child) => {
+      if (child.nodeType === 3) return;                       // text, fine as is
+      if (child.nodeType !== 1) { child.remove(); return; }    // comments and friends
+
+      if (child.tagName === 'SCRIPT' || child.tagName === 'STYLE') {
+        child.remove();
+        return;
+      }
+      if (!INLINE_OK.test(child.tagName)) {
+        node.replaceChild(document.createTextNode(child.textContent || ''), child);
+        return;
+      }
+      Array.from(child.attributes).forEach((a) => child.removeAttribute(a.name));
+      walk(child);
+    });
+  })(box);
+
+  return box.innerHTML;
+}
+
 /** Google Maps directions link for a place name. */
 export function mapsUrl(q) {
   return 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(q);
@@ -35,6 +71,18 @@ export function parseMoney(s) {
 export function money(n) {
   if (n == null || isNaN(n)) return '—';
   return '$' + Math.round(n).toLocaleString('en-US');
+}
+
+/**
+ * Is this something we are willing to hand to an <img src>?
+ * Anything pasted in is shared with everyone else on the trip, so keep it to
+ * ordinary web images and a local file — not javascript:, not data:.
+ */
+export function isImageUrl(s) {
+  const txt = String(s || '').trim();
+  if (!txt) return false;
+  if (/^\.?\/?assets\//.test(txt)) return true;
+  return /^https?:\/\/\S+$/i.test(txt);
 }
 
 /** Short unique id for user-added records. */

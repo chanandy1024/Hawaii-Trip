@@ -1,10 +1,10 @@
 // Activities: grouped rows with voting, a confirm toggle, and an add form.
 
 import { ACTIVITIES, ACTIVITY_GROUPS } from '../../data/activities.js';
-import { state, addActivity, removeRecord, toggleConfirm, isConfirmed, setVote }
+import { state, addActivity, removeRecord, toggleConfirm, isConfirmed, setVote, voteTally }
   from '../state.js';
-import { esc, tagOf, parseMoney } from '../util.js';
-import { thumb, confirmBtn } from './shared.js';
+import { esc, tagOf, parseMoney, sanitizeInline } from '../util.js';
+import { thumb, confirmBtn, credits } from './shared.js';
 
 /** Built-ins plus user additions, minus anything removed. */
 export function allActivities() {
@@ -15,8 +15,19 @@ export function findActivity(id) {
   return allActivities().find((a) => a.id === id);
 }
 
+/** One 👍 / 👎 button, showing everyone's count and naming them on hover. */
+function voteBtn(dir, tally) {
+  const who = dir === 'up' ? tally.up : tally.down;
+  const label = who.length
+    ? who.join(', ') + (dir === 'up' ? ' voted yes' : ' voted no')
+    : 'Nobody yet';
+  return '<button class="vote" data-v="' + dir + '" aria-pressed="' + (tally.mine === dir) + '"' +
+    ' title="' + esc(label) + '">' + (dir === 'up' ? '👍' : '👎') +
+    ' <span>' + who.length + '</span></button>';
+}
+
 function card(a) {
-  const vote = state.votes[a.id] || null;
+  const tally = voteTally(a.id);
   const conf = isConfirmed(a.id);
 
   return '<div class="act' + (conf ? ' is-conf' : '') + '" data-id="' + esc(a.id) + '">' +
@@ -31,19 +42,14 @@ function card(a) {
     '<div class="act-side">' +
       '<p class="when">' + esc(a.when || '') + '</p>' +
       '<p class="cost">' + esc(a.cost || '') + '</p>' +
-      '<div class="votes">' +
-        '<button class="vote" data-v="up" aria-pressed="' + (vote === 'up') + '">👍 <span>' +
-          (vote === 'up' ? 1 : 0) + '</span></button>' +
-        '<button class="vote" data-v="down" aria-pressed="' + (vote === 'down') + '">👎 <span>' +
-          (vote === 'down' ? 1 : 0) + '</span></button>' +
-      '</div>' +
+      '<div class="votes">' + voteBtn('up', tally) + voteBtn('down', tally) + '</div>' +
       confirmBtn(a.id) +
       '<div class="mini">' +
         (a.more ? '<button class="det">details ▾</button>' : '') +
         '<button class="kill">remove</button>' +
       '</div>' +
     '</div>' +
-    (a.more ? '<div class="more" hidden>' + a.more + '</div>' : '') +
+    (a.more ? '<div class="more" hidden>' + sanitizeInline(a.more) + '</div>' : '') +
     '</div>';
 }
 
@@ -78,7 +84,8 @@ export function render() {
       '</div>' +
       '<textarea id="aMore" placeholder="Notes (optional)"></textarea>' +
       '<button class="go" id="aGo">Add it</button>' +
-    '</div>';
+    '</div>' +
+    credits(list.map((a) => 'a_' + a.id));
 
   return out;
 }

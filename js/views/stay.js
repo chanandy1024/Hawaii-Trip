@@ -3,7 +3,7 @@
 import { HOTELS } from '../../data/hotels.js';
 import { toggleConfirm, isConfirmed } from '../state.js';
 import { esc, tagOf, mapsUrl, picsUrl, parseMoney } from '../util.js';
-import { thumb, confirmBtn } from './shared.js';
+import { gallery, confirmBtn, credits } from './shared.js';
 
 /** Just the property records, skipping the section-heading entries. */
 export function allHotels() {
@@ -27,8 +27,8 @@ function card(h) {
     : '';
 
   return '<div class="stay' + (conf ? ' is-conf' : '') + '" data-id="' + esc(h.id) + '">' +
+    gallery('h_' + h.id, h.e, h.t, h.q) +
     '<div class="stay-head">' +
-      thumb('h_' + h.id, h.e, h.t, 't120', h.q) +
       '<div class="stay-rest">' +
         '<div class="stay-top"><h4>' + esc(h.name) + tagOf(h.tag) + '</h4>' +
         '<p class="specs">' + esc(h.specs) + '</p></div>' +
@@ -50,7 +50,8 @@ function card(h) {
 
 export function render() {
   let out = '<p class="lede">Confirm the one you book and it moves to the Confirmed tab with a ' +
-    'field for the reservation reference.</p>';
+    'field for the reservation reference. The photo strip on each card takes any image URL — ' +
+    'paste several at once, separated by spaces, to build a gallery from the listing.</p>';
   let first = true;
 
   HOTELS.forEach((h) => {
@@ -63,7 +64,7 @@ export function render() {
     out += card(h);
   });
 
-  return out;
+  return out + credits(allHotels().map((h) => 'h_' + h.id));
 }
 
 export function bind(repaint) {

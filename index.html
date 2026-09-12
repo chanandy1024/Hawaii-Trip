@@ -18,8 +18,6 @@
 <body>
 
 <!-- ── sign-in gate ───────────────────────────────────────────────────────── -->
-<!-- This is a client-side check. It keeps a shared link from being idly poked
-     at; it is not security. See js/auth.js for the full explanation. -->
 <div id="gate" hidden>
   <div class="gate-card">
     <h1>Hawai‘i '26</h1>
@@ -33,9 +31,7 @@
       <button class="go" type="submit">Open the plan</button>
     </form>
     <p class="gate-note">
-      This gate runs in your browser, so treat it as a doormat rather than a lock — anyone
-      determined can step around it, and the trip data is readable either way. Don't put
-      anything private in here.
+      Ask whoever sent you the link if you don't have the passphrase.
     </p>
   </div>
 </div>
@@ -90,14 +86,15 @@
 <div id="imgbar" hidden>
   <div class="ibin">
     <span class="who">Photo</span>
-    <input id="imgbarUrl" type="url" placeholder="Paste an image URL ending in .jpg / .png">
+    <input id="imgbarUrl" type="text" placeholder="Paste one image URL, or several separated by spaces">
     <button class="pri" id="imgbarSave">Save</button>
     <button id="imgbarFind">Find photos ↗</button>
     <button id="imgbarClear">Remove</button>
     <button id="imgbarCancel">Cancel</button>
     <p class="hint">
       Right-click a photo on the hotel or restaurant's own site → “Copy image address”, then paste
-      it here.
+      it here. Paste several at once — separated by spaces or commas — and the Stay cards turn them
+      into a gallery you can swipe through.
     </p>
   </div>
 </div>

@@ -1,7 +1,7 @@
 // Days: the itinerary. Every line is editable in place.
 
 import { state, touchDays } from '../state.js';
-import { esc } from '../util.js';
+import { esc, sanitizeInline } from '../util.js';
 
 export function render() {
   const days = state.days || [];
@@ -17,7 +17,7 @@ export function render() {
         '<ul class="ditems">' +
           d.items.map((it, ii) =>
             '<li><span class="ed" contenteditable="plaintext-only" data-fld="item" data-ii="' +
-              ii + '">' + it + '</span>' +
+              ii + '">' + sanitizeInline(it) + '</span>' +
             '<button class="x" data-ii="' + ii + '" title="Delete line">×</button></li>'
           ).join('') +
         '</ul>' +
@@ -88,7 +88,7 @@ export function bind(repaint) {
     const before = el.dataset.fld === 'item'
       ? state.days[di].items[+el.dataset.ii]
       : state.days[di][el.dataset.fld];
-    const after = el.dataset.fld === 'item' ? el.innerHTML : el.textContent;
+    const after = el.dataset.fld === 'item' ? sanitizeInline(el.innerHTML) : el.textContent;
     if (before === after) return; // focus passed through without an edit
 
     if (el.dataset.fld === 'item') state.days[di].items[+el.dataset.ii] = after;

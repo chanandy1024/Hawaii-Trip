@@ -2,7 +2,7 @@
 
 import { HIGHLIGHTS } from '../../data/highlights.js';
 import { state, save } from '../state.js';
-import { thumb } from './shared.js';
+import { thumb, credits } from './shared.js';
 
 const STATS = [
   { k: 'Ocean', f: '80–81°F', c: '27°C', s: 'Warmest water of the year', cls: 'hero' },
@@ -37,6 +37,7 @@ export function render() {
   ).join('');
 
   return '<h2>Highlights</h2><div class="hl-grid">' + hl + '</div>' +
+    credits(HIGHLIGHTS.map((x) => x.k)) +
 
     '<div class="cond-head"><h2>Conditions, late September</h2>' +
     '<div class="seg" id="unitSeg">' +

@@ -23,7 +23,8 @@ const VERBS = {
   cost: 'updated the cost for',
   ref: 'added a reference for',
   reset: 'reset the whole plan',
-  import: 'merged in changes'
+  import: 'merged in changes',
+  clear: 'cleared the change feed'
 };
 
 export function verbFor(kind) {

@@ -98,7 +98,16 @@ function paintPanel() {
     if (el) el.hidden = t.id !== tab.id;
   });
 
-  const host = document.getElementById(tab.id);
+  // Swap in a fresh panel node rather than just refilling this one. Views bind
+  // delegated listeners to the panel on every paint, and a node that survives
+  // the paint keeps the old ones too — so one click fires two handlers, then
+  // four. A vote toggled an even number of times lands back where it started,
+  // which looks like a button that does nothing. Cloning drops the listeners
+  // with the old node; anything bound inside the panel is rebuilt anyway.
+  const old = document.getElementById(tab.id);
+  const host = old.cloneNode(false);
+  old.replaceWith(host);
+
   host.innerHTML = tab.view.render();
   if (tab.view.bind) tab.view.bind(repaint);
 }

@@ -89,6 +89,12 @@ outside it: copy `js/` and `data/` somewhere with a `{"type":"module"}` package.
 `document`/`localStorage`, and import. That has been enough to catch every real bug so
 far. Worth re-running after touching state, sync, or anything that renders stored text:
 
+- boot the real `app.js` against the real `index.html` in jsdom, switch tabs a few times,
+  then click each control **once** and assert exactly one feed entry per click. Views bind
+  delegated listeners to the panel on every paint, so anything that lets the panel node
+  survive a repaint makes listeners stack — one click fires two handlers, then four, and a
+  vote toggled twice looks like a dead button. `paintPanel()` swaps in a fresh node to
+  prevent it;
 - render all eight tabs and assert no `undefined` leaks into the markup;
 - merge a deliberately poisoned snapshot (script tags, `onerror`, `javascript:` URLs) and
   assert nothing executable survives into the DOM;

@@ -21,7 +21,7 @@ const TRIP_ID = 'hawaii-2026';
  * and the app talks to the database unauthenticated, which only works while the
  * rules allow it.
  */
-const WEB_API_KEY = '';
+const WEB_API_KEY = 'AIzaSyCx6L8g7k4-Go-TRjhWBrhhvfRuug6Mt-M';
 
 /** How often to check whether someone else has saved, in milliseconds. */
 export const POLL_MS = 12000;
@@ -40,6 +40,7 @@ const TOKEN_KEY = 'hawaii26:anon';
 
 let session = null;      // { idToken, refreshToken, expiresAt }
 let pending = null;      // in-flight sign-in, so a burst of calls waits on one
+let blockedUntil = 0;    // sign-in unavailable; don't hammer it on every request
 
 function readStoredRefresh() {
   try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
@@ -96,11 +97,27 @@ async function signIn() {
   return keep(r.idToken, r.refreshToken, r.expiresIn);
 }
 
-/** A usable ID token, or '' when anonymous auth is not configured. */
+/** A usable ID token, or '' when anonymous sign-in is not available. */
 async function authToken() {
-  if (!WEB_API_KEY) return '';
+  if (!WEB_API_KEY || Date.now() < blockedUntil) return '';
   if (session && Date.now() < session.expiresAt) return session.idToken;
-  if (!pending) pending = signIn().finally(() => { pending = null; });
+
+  if (!pending) {
+    pending = signIn()
+      .catch((e) => {
+        // Sign-in is configured here but not available over there — typically
+        // Authentication has not been switched on for the project yet. Carry on
+        // unauthenticated: that still works while the rules allow it, and once
+        // they don't, the database refuses in a way that says so. Retrying on
+        // every request would be pointless, so back off for a few minutes.
+        blockedUntil = Date.now() + 5 * 60 * 1000;
+        console.warn(String(e.message || e) +
+          ' — continuing without it. Anyone can reach this database until the rules ' +
+          'require auth, and they cannot require auth until sign-in works.');
+        return '';
+      })
+      .finally(() => { pending = null; });
+  }
   return pending;
 }
 
